@@ -67,49 +67,6 @@ class TraderApi(TraderApiBase):
         self.pl_parameter_dict = parameter_dict['ProfitLossParameter']
 
     # ############################################################################# #
-    def req_qry_trade(self):
-        """
-        查询成交。
-        :return:
-        """
-        qry_trade_field = QryTradeField(BrokerID=self.broker_id,
-                                        InvestorID=self.investor_id)
-        return self.ReqQryTrade(qry_trade_field)
-
-    def req_qry_investor_position(self):
-        """
-        查询持仓。
-        :return:
-        """
-        qry_investor_position_field = QryInvestorPositionField(BrokerID=self.broker_id,
-                                                               InvestorID=self.investor_id)
-        return self.ReqQryInvestorPosition(qry_investor_position_field)
-
-    def req_qry_investor_position_detial(self):
-        """
-        查询持仓明细。
-        :return:
-        """
-        qry_investor_position_detial_field = QryInvestorPositionDetailField(BrokerID=self.broker_id,
-                                                                            InvestorID=self.investor_id)
-        return self.ReqQryInvestorPositionDetail(qry_investor_position_detial_field)
-
-    def req_qry_trading_account(self):
-        """
-        查询资金。
-        :return:
-        """
-        qry_trading_account_field = QryTradingAccountField(BrokerID=self.broker_id,
-                                                           AccountID=self.investor_id,
-                                                           CurrencyID=b'CNY',
-                                                           BizType=BizType_Future)
-        return self.ReqQryTradingAccount(qry_trading_account_field)
-
-    def req_qry_instrument(self):
-        qry_instrument_field = QryInstrumentField()
-        self.ReqQryInstrument(addressof(qry_instrument_field))
-
-    # ############################################################################# #
     def get_price(self, instrument_id, direction, price_type=0):
         """
         :param instrument_id:合约
@@ -128,111 +85,6 @@ class TraderApi(TraderApiBase):
                 result = md['LowerLimitPrice'] if direction == Direction_Sell else md['UpperLimitPrice']
         except Exception as err_msg:
             self.write_log('get_default_price', err_msg)
-        finally:
-            return result
-
-    def buy_open(self, exchange_id, instrument_id, order_price, order_vol):
-        """
-        买开仓。与卖平仓为一组对应交易。
-        :param exchange_id: 交易所
-        :param instrument_id: 合约
-        :param order_price: 价格
-        :param order_vol: 数量
-        :return:
-        """
-        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Buy, OffsetFlag_Open)
-
-    def sell_close(self, exchange_id, instrument_id, order_price, order_vol, is_today=True):
-        """
-        卖平仓。与买开仓为一组对应交易。SHFE与INE区分平今与平昨。
-        :param exchange_id:
-        :param instrument_id:
-        :param order_price:
-        :param order_vol:
-        :param is_today:
-        :return:
-        """
-        offset_flag = (OffsetFlag_CloseToday if is_today else OffsetFlag_CloseYesterday) if (exchange_id == b'SHFE' or exchange_id == b'INE') else OffsetFlag_Close
-        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Sell, offset_flag)
-
-    def sell_open(self, exchange_id, instrument_id, order_price, order_vol):
-        """
-        卖开仓。与买平仓为一组对应交易。
-        :param exchange_id:
-        :param instrument_id:
-        :param order_price:
-        :param order_vol:
-        :return:
-        """
-        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Sell, OffsetFlag_Open)
-
-    def buy_close(self, exchange_id, instrument_id, order_price, order_vol, is_today=True):
-        """
-        买平仓。与卖开仓为一组对应交易。SHFE与INE区分平今与平昨。
-        :param exchange_id:
-        :param instrument_id:
-        :param order_price:
-        :param order_vol:
-        :param is_today:
-        :return:
-        """
-        offset_flag = (OffsetFlag_CloseToday if is_today else OffsetFlag_CloseYesterday) if (exchange_id == b'SHFE' or exchange_id == b'INE') else OffsetFlag_Close
-        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Buy, offset_flag)
-
-    def inc_order_ref(self):
-        """
-        增加报单引用，用来标识订单。
-        :return:
-        """
-        self.order_ref += 1
-
-    def req_order_insert(self, exchange_id, instrument_id, order_price, order_vol, direction, offset_flag):
-        """
-        录入报单请求。将订单结构体参数传递给父类方法ReqOrderInsert执行。
-        :param exchange_id:交易所ID。
-        :param instrument_id:合约ID。
-        :param order_price:报单价格。
-        :param order_vol:报单手数。
-        :param direction:买卖方向。
-        (‘买 : 0’,)
-        (‘卖 : 1’,)
-        :param offset_flag:开平标志，只有SHFE和INE区分平今、平昨。
-        (‘开仓 : 0’,)
-        (‘平仓 : 1’,)
-        (‘强平 : 2’,)
-        (‘平今 : 3’,)
-        (‘平昨 : 4’,)
-        (‘强减 : 5’,)
-        (‘本地强平 : 6’,)
-        :return:
-        """
-        result = -1
-        try:
-            self.inc_order_ref()
-            input_order_field = InputOrderField(
-                BrokerID=self.broker_id,
-                InvestorID=self.investor_id,
-                ExchangeID=exchange_id,
-                InstrumentID=instrument_id,
-                UserID=self.investor_id,
-                OrderPriceType=OrderPriceType_LimitPrice,
-                Direction=direction,
-                CombOffsetFlag=offset_flag,
-                CombHedgeFlag=HedgeFlag_Speculation,
-                LimitPrice=order_price,
-                VolumeTotalOriginal=order_vol,
-                TimeCondition=TimeCondition_GFD,
-                VolumeCondition=VolumeCondition_AV,
-                MinVolume=1,
-                ContingentCondition=ContingentCondition_Immediately,
-                StopPrice=0,
-                ForceCloseReason=ForceCloseReason_NotForceClose,
-                IsAutoSuspend=0,
-                OrderRef=to_bytes(self.order_ref),
-            )
-            result = self.ReqOrderInsert(input_order_field)
-        except Exception as err_msg:
-            self.write_log('req_order_insert', err_msg)
         finally:
             return result
 
@@ -271,36 +123,6 @@ class TraderApi(TraderApiBase):
         pass
 
     # ############################################################################# #
-    def req_order_action(self, exchange_id, instrument_id, order_ref, order_sysid=b''):
-        """
-        撤单请求。将撤单结构体参数传递给父类方法ReqOrderAction执行。
-        :param exchange_id:交易所ID
-        :param instrument_id:合约ID
-        :param order_ref:报单引用，用来标识订单来源。根据该标识撤单。
-        :param order_sysid:系统ID，当录入成功时，可在回报/通知中获取该字段。
-        :return:
-        """
-        result = -1
-        try:
-            self.inc_order_ref()
-            input_order_action_field = InputOrderActionField(
-                BrokerID=self.broker_id,
-                InvestorID=self.investor_id,
-                OrderActionRef=to_bytes(self.order_ref),
-                OrderRef=order_ref,
-                FrontID=self.front_id,
-                SessionID=self.session_id,
-                ExchangeID=exchange_id,
-                OrderSysID=order_sysid,
-                ActionFlag=ActionFlag_Delete,
-                UserID=self.investor_id,
-                InstrumentID=instrument_id,
-            )
-            result = self.ReqOrderAction(input_order_action_field)
-        except Exception as err_msg:
-            self.write_log('req_order_action', err_msg)
-        finally:
-            return result
 
     def OnRspOrderAction(self, pInputOrderAction, pRspInfo, nRequestID, bIsLast):
         """

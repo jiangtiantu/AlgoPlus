@@ -17,9 +17,10 @@ from .cython2c.ThostFtdcUserApiStruct cimport *
 from .cython2c.cTraderApi             cimport CTraderSpi, CTraderApi, CreateFtdcTraderApi
 
 from .ApiStruct import *
+from .ApiConst import *
 
-from AlgoPlus.utils.check_service import check_service
-from AlgoPlus.utils.base_field    import to_bytes, to_str
+from ..utils.check_service import check_service
+from ..utils.base_field    import to_bytes, to_str
 
 
 
@@ -83,6 +84,7 @@ cdef class TraderApiBase:
 
             # ############################################################################# #
             self.md_queue = md_queue
+            self.order_ref = 0
 
             # ############################################################################# #
             self.init_extra()
@@ -109,6 +111,204 @@ cdef class TraderApiBase:
             self.Release()
         except Exception as err_msg:
             self.write_log('__dealloc__', err_msg)
+
+
+
+    # ############################################################################# #
+    # ############################################################################# #
+    # ############################################################################# #
+    def req_qry_order(self):
+        """
+        查询订单。
+        :return:
+        """
+        qry_order_field = QryOrderField(BrokerID=self.broker_id,
+                                        InvestorID=self.investor_id)
+        return self.ReqQryOrder(qry_order_field)
+
+    def req_qry_trade(self):
+        """
+        查询成交。
+        :return:
+        """
+        qry_trade_field = QryTradeField(BrokerID=self.broker_id,
+                                        InvestorID=self.investor_id)
+        return self.ReqQryTrade(qry_trade_field)
+
+    def req_qry_investor_position(self):
+        """
+        查询持仓。
+        :return:
+        """
+        qry_investor_position_field = QryInvestorPositionField(BrokerID=self.broker_id,
+                                                               InvestorID=self.investor_id)
+        return self.ReqQryInvestorPosition(qry_investor_position_field)
+
+    def req_qry_investor_position_detial(self):
+        """
+        查询持仓明细。
+        :return:
+        """
+        qry_investor_position_detial_field = QryInvestorPositionDetailField(BrokerID=self.broker_id,
+                                                                            InvestorID=self.investor_id)
+        return self.ReqQryInvestorPositionDetail(qry_investor_position_detial_field)
+
+    def req_qry_trading_account(self):
+        """
+        查询资金。
+        :return:
+        """
+        qry_trading_account_field = QryTradingAccountField(BrokerID=self.broker_id,
+                                                           AccountID=self.investor_id,
+                                                           CurrencyID=b'CNY',
+                                                           BizType=BizType_Future)
+        return self.ReqQryTradingAccount(qry_trading_account_field)
+
+    def req_qry_instrument(self):
+        qry_instrument_field = QryInstrumentField()
+        self.ReqQryInstrument(addressof(qry_instrument_field))
+
+
+
+    # ############################################################################# #
+    # ############################################################################# #
+    # ############################################################################# #
+    # ############################################################################# #
+    def inc_order_ref(self):
+        """
+        增加报单引用，用来标识订单。
+        :return:
+        """
+        self.order_ref += 1
+
+    def buy_open(self, exchange_id, instrument_id, order_price, order_vol):
+        """
+        买开仓。与卖平仓为一组对应交易。
+        :param exchange_id: 交易所
+        :param instrument_id: 合约
+        :param order_price: 价格
+        :param order_vol: 数量
+        :return:
+        """
+        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Buy, OffsetFlag_Open)
+
+    def sell_close(self, exchange_id, instrument_id, order_price, order_vol, is_today=True):
+        """
+        卖平仓。与买开仓为一组对应交易。SHFE与INE区分平今与平昨。
+        :param exchange_id:
+        :param instrument_id:
+        :param order_price:
+        :param order_vol:
+        :param is_today:
+        :return:
+        """
+        offset_flag = (OffsetFlag_CloseToday if is_today else OffsetFlag_CloseYesterday) if (exchange_id == b'SHFE' or exchange_id == b'INE') else OffsetFlag_Close
+        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Sell, offset_flag)
+
+    def sell_open(self, exchange_id, instrument_id, order_price, order_vol):
+        """
+        卖开仓。与买平仓为一组对应交易。
+        :param exchange_id:
+        :param instrument_id:
+        :param order_price:
+        :param order_vol:
+        :return:
+        """
+        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Sell, OffsetFlag_Open)
+
+    def buy_close(self, exchange_id, instrument_id, order_price, order_vol, is_today=True):
+        """
+        买平仓。与卖开仓为一组对应交易。SHFE与INE区分平今与平昨。
+        :param exchange_id:
+        :param instrument_id:
+        :param order_price:
+        :param order_vol:
+        :param is_today:
+        :return:
+        """
+        offset_flag = (OffsetFlag_CloseToday if is_today else OffsetFlag_CloseYesterday) if (exchange_id == b'SHFE' or exchange_id == b'INE') else OffsetFlag_Close
+        return self.req_order_insert(exchange_id, instrument_id, order_price, order_vol, Direction_Buy, offset_flag)
+
+    def req_order_insert(self, exchange_id, instrument_id, order_price, order_vol, direction, offset_flag):
+        """
+        录入报单请求。将订单结构体参数传递给父类方法ReqOrderInsert执行。
+        :param exchange_id:交易所ID。
+        :param instrument_id:合约ID。
+        :param order_price:报单价格。
+        :param order_vol:报单手数。
+        :param direction:买卖方向。
+        (‘买 : 0’,)
+        (‘卖 : 1’,)
+        :param offset_flag:开平标志，只有SHFE和INE区分平今、平昨。
+        (‘开仓 : 0’,)
+        (‘平仓 : 1’,)
+        (‘强平 : 2’,)
+        (‘平今 : 3’,)
+        (‘平昨 : 4’,)
+        (‘强减 : 5’,)
+        (‘本地强平 : 6’,)
+        :return:
+        """
+        result = -1
+        try:
+            self.inc_order_ref()
+            input_order_field = InputOrderField(
+                BrokerID=self.broker_id,
+                InvestorID=self.investor_id,
+                ExchangeID=exchange_id,
+                InstrumentID=instrument_id,
+                UserID=self.investor_id,
+                OrderPriceType=OrderPriceType_LimitPrice,
+                Direction=direction,
+                CombOffsetFlag=offset_flag,
+                CombHedgeFlag=HedgeFlag_Speculation,
+                LimitPrice=order_price,
+                VolumeTotalOriginal=order_vol,
+                TimeCondition=TimeCondition_GFD,
+                VolumeCondition=VolumeCondition_AV,
+                MinVolume=1,
+                ContingentCondition=ContingentCondition_Immediately,
+                StopPrice=0,
+                ForceCloseReason=ForceCloseReason_NotForceClose,
+                IsAutoSuspend=0,
+                OrderRef=to_bytes(self.order_ref),
+            )
+            result = self.ReqOrderInsert(input_order_field)
+        except Exception as err_msg:
+            self.write_log('req_order_insert', err_msg)
+        finally:
+            return result
+
+    def req_order_action(self, exchange_id, instrument_id, order_ref, order_sysid=b''):
+        """
+        撤单请求。将撤单结构体参数传递给父类方法ReqOrderAction执行。
+        :param exchange_id:交易所ID
+        :param instrument_id:合约ID
+        :param order_ref:报单引用，用来标识订单来源。根据该标识撤单。
+        :param order_sysid:系统ID，当录入成功时，可在回报/通知中获取该字段。
+        :return:
+        """
+        result = -1
+        try:
+            self.inc_order_ref()
+            input_order_action_field = InputOrderActionField(
+                BrokerID=self.broker_id,
+                InvestorID=self.investor_id,
+                OrderActionRef=self.order_ref,
+                OrderRef=to_bytes(order_ref),
+                FrontID=self.front_id,
+                SessionID=self.session_id,
+                ExchangeID=exchange_id,
+                OrderSysID=order_sysid,
+                ActionFlag=ActionFlag_Delete,
+                UserID=self.investor_id,
+                InstrumentID=instrument_id,
+            )
+            result = self.ReqOrderAction(input_order_action_field)
+        except Exception as err_msg:
+            self.write_log('req_order_action', err_msg)
+        finally:
+            return result
 
 
 
@@ -811,12 +1011,12 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///报单录入错误回报
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
-        self.write_log('OnErrRtnOrderInsert', pInputOrder)
+        self.write_log('OnErrRtnOrderInsert', pRspInfo, pInputOrder)
 
     # ############################################################################# #
     # ///提示条件单校验错误
     def OnRtnErrorConditionalOrder(self, pErrorConditionalOrder):
-        self.write_log('OnRtnErrorConditionalOrder', pErrorConditionalOrder)
+        self.write_log('OnRtnErrorConditionalOrder', pRspInfo, pErrorConditionalOrder)
 
 
 
@@ -899,7 +1099,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///撤单操作错误回报
     def OnErrRtnOrderAction(self, pOrderAction, pRspInfo):
-        self.write_log('OnErrRtnOrderAction', pOrderAction)
+        self.write_log('OnErrRtnOrderAction', pRspInfo, pOrderAction)
 
 
 
@@ -930,7 +1130,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///批量报单操作错误回报
     def OnErrRtnBatchOrderAction(self, pBatchOrderAction, pRspInfo):
-        self.write_log('OnErrRtnBatchOrderAction', pBatchOrderAction)
+        self.write_log('OnErrRtnBatchOrderAction', pRspInfo, pBatchOrderAction)
 
 
 
@@ -1122,7 +1322,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///申请组合录入错误回报
     def OnErrRtnCombActionInsert(self, pInputCombAction, pRspInfo):
-        self.write_log('OnErrRtnCombActionInsert', pInputCombAction)
+        self.write_log('OnErrRtnCombActionInsert', pRspInfo, pInputCombAction)
 
 
 
@@ -1314,7 +1514,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///报价录入错误回报
     def OnErrRtnQuoteInsert(self, pInputQuote, pRspInfo):
-        self.write_log('OnErrRtnQuoteInsert', pInputQuote)
+        self.write_log('OnErrRtnQuoteInsert', pRspInfo, pInputQuote)
 
 
 
@@ -1371,7 +1571,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///报价操作错误回报
     def OnErrRtnQuoteAction(self, pQuoteAction, pRspInfo):
-        self.write_log('OnErrRtnQuoteAction', pQuoteAction)
+        self.write_log('OnErrRtnQuoteAction', pRspInfo, pQuoteAction)
 
 
 
@@ -1407,7 +1607,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///询价录入错误回报
     def OnErrRtnForQuoteInsert(self, pInputForQuote, pRspInfo):
-        self.write_log('OnErrRtnForQuoteInsert', pInputForQuote)
+        self.write_log('OnErrRtnForQuoteInsert', pRspInfo, pInputForQuote)
 
 
 
@@ -1467,7 +1667,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///执行宣告录入错误回报
     def OnErrRtnExecOrderInsert(self, pInputExecOrder, pRspInfo):
-        self.write_log('OnErrRtnExecOrderInsert', pInputExecOrder)
+        self.write_log('OnErrRtnExecOrderInsert', pRspInfo, pInputExecOrder)
 
 
 
@@ -1524,7 +1724,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///执行宣告操作错误回报
     def OnErrRtnExecOrderAction(self, pExecOrderAction, pRspInfo):
-        self.write_log('OnErrRtnExecOrderAction', pExecOrderAction)
+        self.write_log('OnErrRtnExecOrderAction', pRspInfo, pExecOrderAction)
 
 
 
@@ -1560,7 +1760,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///期权自对冲录入错误回报
     def OnErrRtnOptionSelfCloseInsert(self, pInputOptionSelfClose, pRspInfo):
-        self.write_log('OnErrRtnOptionSelfCloseInsert', pInputOptionSelfClose)
+        self.write_log('OnErrRtnOptionSelfCloseInsert', pRspInfo, pInputOptionSelfClose)
 
 
 
@@ -1617,7 +1817,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///期权自对冲操作错误回报
     def OnErrRtnOptionSelfCloseAction(self, pOptionSelfCloseAction, pRspInfo):
-        self.write_log('OnErrRtnOptionSelfCloseAction', pOptionSelfCloseAction)
+        self.write_log('OnErrRtnOptionSelfCloseAction', pRspInfo, pOptionSelfCloseAction)
 
 
 
@@ -1653,7 +1853,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///期货发起银行资金转期货错误回报
     def OnErrRtnBankToFutureByFuture(self, pReqTransfer, pRspInfo):
-        self.write_log('OnErrRtnBankToFutureByFuture', pReqTransfer)
+        self.write_log('OnErrRtnBankToFutureByFuture', pRspInfo, pReqTransfer)
 
     # ############################################################################# #
     # ///期货发起冲正银行转期货请求，银行处理完毕后报盘发回的通知
@@ -1668,7 +1868,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///系统运行时期货端手工发起冲正银行转期货错误回报
     def OnErrRtnRepealBankToFutureByFutureManual(self, pReqRepeal, pRspInfo):
-        self.write_log('OnErrRtnRepealBankToFutureByFutureManual', pReqRepeal)
+        self.write_log('OnErrRtnRepealBankToFutureByFutureManual', pRspInfo, pReqRepeal)
 
     # ############################################################################# #
     # ///银行发起银行资金转期货通知
@@ -1729,7 +1929,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///系统运行时期货端手工发起冲正期货转银行错误回报
     def OnErrRtnRepealFutureToBankByFutureManual(self, pReqRepeal, pRspInfo):
-        self.write_log('OnErrRtnRepealFutureToBankByFutureManual', pReqRepeal)
+        self.write_log('OnErrRtnRepealFutureToBankByFutureManual', pRspInfo, pReqRepeal)
 
     # ############################################################################# #
     # ///银行发起期货资金转银行通知
@@ -1775,7 +1975,7 @@ cdef class TraderApiBase:
     # ############################################################################# #
     # ///期货发起查询银行余额错误回报
     def OnErrRtnQueryBankBalanceByFuture(self, pReqQueryAccount, pRspInfo):
-        self.write_log('OnErrRtnQueryBankBalanceByFuture', pReqQueryAccount)
+        self.write_log('OnErrRtnQueryBankBalanceByFuture', pRspInfo, pReqQueryAccount)
 
 
 

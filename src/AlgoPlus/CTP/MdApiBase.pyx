@@ -19,8 +19,8 @@ from .cython2c.cMdApi                 cimport CMdSpi, CMdApi, CreateFtdcMdApi
 
 from .ApiStruct import *
 
-from AlgoPlus.utils.check_service import check_service
-from AlgoPlus.utils.base_field    import to_bytes, to_str
+from ..utils.check_service import check_service
+from ..utils.base_field    import to_bytes, to_str
 
 
 cdef class MdApiBase:

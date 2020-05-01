@@ -43,6 +43,7 @@ shutil.copy(os.path.join(API_DIR, "ApiConst.py"), TOOLS_API_DIR)
 shutil.copy(os.path.join(API_DIR, "FutureAccount.py"), TOOLS_API_DIR)
 shutil.copy(os.path.join(API_DIR, "MdApi.py"), TOOLS_API_DIR)
 shutil.copy(os.path.join(API_DIR, "TraderApi.py"), TOOLS_API_DIR)
+shutil.copy(os.path.join(API_DIR, "ReqAuthenticate.py"), TOOLS_API_DIR)
 
 TOOLS_UTIL_DIR = os.path.join(CUR_DIR, PRJ_NAME, "utils")
 if not os.path.exists(TOOLS_UTIL_DIR):
@@ -50,6 +51,12 @@ if not os.path.exists(TOOLS_UTIL_DIR):
 shutil.copy(os.path.join(PRJ_DIR, "utils", "__init__.py"), TOOLS_UTIL_DIR)
 shutil.copy(os.path.join(PRJ_DIR, "utils", "base_field.py"), TOOLS_UTIL_DIR)
 shutil.copy(os.path.join(PRJ_DIR, "utils", "check_service.py"), TOOLS_UTIL_DIR)
+
+TA_DIR = os.path.join(CUR_DIR, PRJ_NAME, "ta")
+if not os.path.exists(TA_DIR):
+    os.mkdir(TA_DIR)
+shutil.copy(os.path.join(PRJ_DIR, "utils", "__init__.py"), TA_DIR)
+shutil.copy(os.path.join(PRJ_DIR, "ta", "time_bar.py"), TA_DIR)
 
 package_data = []
 extra_link_args = None
@@ -95,7 +102,7 @@ l_setup_ext_modules = cythonize([Cython_Extension(name="AlgoPlus.CTP.MdApiBase",
 
 setup(
     name=PRJ_NAME,
-    version="2.0",
+    version="2.2",
     author='www.algo.plus',
     author_email='algo@algo.com',
     license="MIT",
@@ -118,7 +125,7 @@ AlgoPlus从以下三个不同的维度实现低延时：
     platforms=["Windows", "Linux"],
     python_requires=">=3.7",
     include_dirs=[CTP_LIB, CYTHON2C_HEADER],
-    packages=["AlgoPlus", "AlgoPlus.CTP", "AlgoPlus.utils"],
+    packages=["AlgoPlus", "AlgoPlus.CTP", "AlgoPlus.utils", "AlgoPlus.ta"],
     data_files=l_data_files,
     ext_modules=l_setup_ext_modules,
     cmdclass={'build_ext': build_ext},
