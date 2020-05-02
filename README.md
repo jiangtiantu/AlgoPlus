@@ -26,44 +26,45 @@ from AlgoPlus.CTP.MdApi import run_mdrecorder
 from AlgoPlus.CTP.FutureAccount import FutureAccount, get_simnow_account
 
 if __name__ == '__main__':
-
-    instrument_id_list = [b'ni2003']  #需要订阅的合约列表
-
+    # 账户配置
+    instrument_id_list = [b'rb2010']  # 需要订阅的合约列表
     future_account = get_simnow_account(
-        investor_id=b'',                        #SimNow账户
-        password=b'',                           #SimNow账户密码
-        instrument_id_list=instrument_id_list,  #合约列表
-        server_name='TEST'                      #电信1、电信2、移动、TEST
+        investor_id=b'',  # SimNow账户
+        password=b'',  # SimNow账户密码
+        instrument_id_list=instrument_id_list,  # 合约列表
+        server_name='TEST'  # 电信1、电信2、移动、TEST
     )
 
-    tick_engine = run_mdrecorder(future_account)
+    #
+    run_mdrecorder(future_account)
 ```
 ## 监控账户成交
 ```python
 from multiprocessing import Process, Queue
-from AlgoPlus.CTP.MdApi import run_mdapi
+from AlgoPlus.CTP.MdApi import run_tick_engine
 from AlgoPlus.CTP.TraderApi import run_traderapi
 from AlgoPlus.CTP.FutureAccount import FutureAccount, get_simnow_account
 
 if __name__ == '__main__':
 
+    # 止盈止损参数
     pl_parameter = {
         'StrategyID': 9,
         'ProfitLossParameter': {
-            b'rb2005': {'0': [5], '1': [5]},   # '0'代表止盈, '1'代表止损
-            b'ni2003': {'0': [50], '1': [50]}  # '0'代表止盈, '1'代表止损
+            b'rb2010': {'0': [2], '1': [2]},   # '0'代表止盈, '1'代表止损
+            b'ni2007': {'0': [20], '1': [20]},   # '0'代表止盈, '1'代表止损
         },
     }
 
+    # 账户配置
     instrument_id_list = []
     for instrument_id in pl_parameter['ProfitLossParameter']:
         instrument_id_list.append(instrument_id)
-
     future_account = get_simnow_account(
         investor_id='',                         # SimNow账户
         password='',                            # SimNow账户密码
         instrument_id_list=instrument_id_list,  # 合约列表
-        # server_name='TEST'                    # 电信1、电信2、移动、TEST
+        server_name='TEST'                    # 电信1、电信2、移动、TEST
     )
 
     # 共享队列
@@ -71,13 +72,15 @@ if __name__ == '__main__':
     share_queue.put(pl_parameter)
 
     # 行情进程
-    md_process = Process(target=run_mdapi, args=(future_account, [share_queue]))
+    md_process = Process(target=run_tick_engine, args=(future_account, [share_queue]))
     # 交易进程
     trader_process = Process(target=run_traderapi, args=(future_account, share_queue))
 
+    #
     md_process.start()
     trader_process.start()
 
+    #
     md_process.join()
     trader_process.join()
 ```
