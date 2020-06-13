@@ -150,6 +150,11 @@ pl_parameter = {
 
 因为目的是为了让大家快速熟悉AlgoPlus，所以很多问题都浅尝辄止，以后有机会我们再进行深入探讨，也欢迎大家在后台留言讨论。
 
+## 7、订阅全市场行情并落地为csv文件
+
+期货合约都是有期限的，订阅全市场行情需要先使用`AlgoPlus.CTP.TraderApi.req_instrument`查询当前挂牌交易的所有合约，然后再交给`run_mdrecorder`订阅并存储。`subscribe_all.py`演示了具体如何使用。
+
+
 # 开源地址
 1. 码云：<https://gitee.com/AlgoPlus/>
 2. GitHub：<https://github.com/CTPPlus/AlgoPlus>

@@ -166,7 +166,7 @@ cdef class TraderApiBase:
 
     def req_qry_instrument(self):
         qry_instrument_field = QryInstrumentField()
-        self.ReqQryInstrument(addressof(qry_instrument_field))
+        self.ReqQryInstrument(qry_instrument_field)
 
 
 

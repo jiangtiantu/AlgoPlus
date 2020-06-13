@@ -123,7 +123,6 @@ class TraderApi(TraderApiBase):
         pass
 
     # ############################################################################# #
-
     def OnRspOrderAction(self, pInputOrderAction, pRspInfo, nRequestID, bIsLast):
         """
         录入撤单回报。不适宜在回调函数里做比较耗时的操作。可参考OnRtnOrder的做法。
@@ -369,3 +368,41 @@ def run_traderapi(account, md_queue=None):
             account.td_page_dir
         )
         trader_engine.Join()
+
+
+class ReqInstrumentApi(TraderApiBase):
+    def __init__(self, broker_id, td_server, investor_id, password, app_id, auth_code, md_queue=None,
+                 page_dir='', private_resume_type=2, public_resume_type=2):
+        self.instrument_id_list = []
+
+    def req_qry_instrumrent_id(self):
+        qry_instrument_field = QryInstrumentField()
+        self.ReqQryInstrument(qry_instrument_field)
+
+    def OnRspQryInstrument(self, pInstrument, pRspInfo, nRequestID, bIsLast):
+        if not pRspInfo or pRspInfo['ErrorID'] == 0:
+            if pInstrument is not None and (pInstrument['InstrumentID'][-4:].isdigit() and pInstrument['InstrumentID'][:-4].isalpha() or pInstrument['InstrumentID'][-3:].isdigit() and pInstrument['InstrumentID'][:-3].isalpha()):
+                self.instrument_id_list.append(pInstrument['InstrumentID'])
+            if bIsLast:
+                self.status = 1
+
+    def Join(self):
+        while True:
+            sleep(1)
+            if self.status == 0:
+                self.req_qry_instrumrent_id()
+            elif self.status == 1:
+                return self.instrument_id_list
+
+
+def req_instrument(account):
+    if isinstance(account, FutureAccount):
+        trader_engine = ReqInstrumentApi(account.broker_id,
+                                         account.server_dict['TDServer'],
+                                         account.investor_id,
+                                         account.password,
+                                         account.app_id,
+                                         account.auth_code,
+                                         None,
+                                         account.td_page_dir)
+        return trader_engine.Join()
