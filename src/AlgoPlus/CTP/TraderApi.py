@@ -381,18 +381,21 @@ class ReqInstrumentApi(TraderApiBase):
 
     def OnRspQryInstrument(self, pInstrument, pRspInfo, nRequestID, bIsLast):
         if not pRspInfo or pRspInfo['ErrorID'] == 0:
-            if pInstrument is not None and (pInstrument['InstrumentID'][-4:].isdigit() and pInstrument['InstrumentID'][:-4].isalpha() or pInstrument['InstrumentID'][-3:].isdigit() and pInstrument['InstrumentID'][:-3].isalpha()):
+            if pInstrument \
+                and (pInstrument['InstrumentID'][-4:].isdigit() and pInstrument['InstrumentID'][:-4].isalpha()
+                     or pInstrument['InstrumentID'][-3:].isdigit() and pInstrument['InstrumentID'][:-3].isalpha()):
                 self.instrument_id_list.append(pInstrument['InstrumentID'])
-            if bIsLast:
-                self.status = 1
+
+            self.status += bIsLast
 
     def Join(self):
         while True:
-            sleep(1)
             if self.status == 0:
                 self.req_qry_instrumrent_id()
-            elif self.status == 1:
+                self.status = 1
+            elif self.status == 2:
                 return self.instrument_id_list
+            sleep(1)
 
 
 def req_instrument(account):
