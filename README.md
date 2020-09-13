@@ -17,8 +17,11 @@ AlgoPlus是上期技术CTP API的Python封装，具有以下特点：
 pip install AlgoPlus
 ```
 
-# 应用范例
+# 入门视频教程
+* [配置Python环境与安装AlgoPlus](https://www.zhihu.com/zvideo/1288264124560662528)
+* [CTP API的工作原理](https://www.zhihu.com/zvideo/1288267321451081728)
 
+# 应用范例
 这里就给大家介绍介个基于AlgoPlus实现的应用范例，供大家参考。
 
 ## 1、获取实时行情
@@ -120,7 +123,6 @@ self.req_qry_trading_account()
 ![](./img/req_authenticate.png)
 
 ## 5、滚动交易
-
 延时是很多量化交易会关注的问题，但是这又是一个很复杂的问题。
 
 为了简单起见，我们设计了`examples/rolling_trade.py`这个滚动交易策略：收到前次报单成交回报时发起新的交易请求。完成300次交易之后，我们统计一下1秒内的交易次数，就可以计算出交易环境的延时，包括网络、交易程序、期货公司系统、交易所系统总的用时。
@@ -130,7 +132,6 @@ self.req_qry_trading_account()
 ![](./img/rolling_trade.png)
 
 ## 6、盈损管理
-
 `examples/profit_loss_manager.py`是一个相对复杂的例子，启动后可以监控账户的所有的成交，包括从快期或者其他终端软件报的单，当达到止盈止损条件时，就会自动平仓。启动前需要设置好止盈止损参数：
 
 ```python
@@ -151,15 +152,13 @@ pl_parameter = {
 因为目的是为了让大家快速熟悉AlgoPlus，所以很多问题都浅尝辄止，以后有机会我们再进行深入探讨，也欢迎大家在后台留言讨论。
 
 ## 7、订阅全市场行情并落地为csv文件
-
 期货合约都是有期限的，订阅全市场行情需要先使用`AlgoPlus.CTP.TraderApi.req_instrument`查询当前挂牌交易的所有合约，然后再交给`run_mdrecorder`订阅并存储。`subscribe_all.py`演示了具体如何使用。
-
 
 # 开源地址
 1. 码云：<https://gitee.com/AlgoPlus/>
 2. GitHub：<https://github.com/CTPPlus/AlgoPlus>
 
-### QQ群与微信公众号
+# QQ群与微信公众号
  * QQ群：**866469866**
  
 ![](./img/QQ群866469866.png)
