@@ -22,6 +22,7 @@ pip install AlgoPlus
 * [CTP API的工作原理](https://www.zhihu.com/zvideo/1288267321451081728)
 
 # 应用范例
+
 这里就给大家介绍介个基于AlgoPlus实现的应用范例，供大家参考。
 
 ## 1、获取实时行情
@@ -37,6 +38,18 @@ AlgoPlus对MdApi进行了封装，我们只需要将账户信息及合约名称�
 
 从输出日志可以看到，AlgoPlus第一步连接服务器，第二步登陆账户，第三步订阅行情，最后就是接收行情数据。
 
+### 1.1 期货合约规范：
+* 上期/能源所：小写+4个数字
+* 大商所：小写+4个数字
+* 中金所：大写+4个数字
+* 郑商所：大写+3个数字
+
+### 1.2 期权合约规范：
+* 上期所/能源所：小写+4个数字+C(或者P)+行权价
+* 郑商所：大写+3个数字+C(或者P)+行权价
+* 中金所：大写+4个数字+-C-(或者-P-)+行权价
+* 大商所：小写+4个数字+-C-(或者-P-)+行权价
+
 ## 2、将行情存为CSV文件
 因为MdApi只推送实时行情，所以存储数据是量化交易至关重要的一项工作。虽然有多种数据库可以选择，但是简单起见，`examples/tick_to_csv.py`使用了csv文件。运行这个例子后，实时行情数据自动被存入`MarketData`文件夹下的csv文件中。
 
@@ -51,6 +64,7 @@ K线自诞生以来就被二级市场所广泛使用。合理的选择K线周期
 
 ```python
 {
+    'InstrumentID': b'', # 合约代码
     'UpdateTime': b'00:46:00', # K线开始时间
     'LastPrice': 3454.0, # 收盘价
     'HighPrice': 3454.0, # 最高价
@@ -123,6 +137,7 @@ self.req_qry_trading_account()
 ![](./img/req_authenticate.png)
 
 ## 5、滚动交易
+
 延时是很多量化交易会关注的问题，但是这又是一个很复杂的问题。
 
 为了简单起见，我们设计了`examples/rolling_trade.py`这个滚动交易策略：收到前次报单成交回报时发起新的交易请求。完成300次交易之后，我们统计一下1秒内的交易次数，就可以计算出交易环境的延时，包括网络、交易程序、期货公司系统、交易所系统总的用时。
@@ -132,6 +147,7 @@ self.req_qry_trading_account()
 ![](./img/rolling_trade.png)
 
 ## 6、盈损管理
+
 `examples/profit_loss_manager.py`是一个相对复杂的例子，启动后可以监控账户的所有的成交，包括从快期或者其他终端软件报的单，当达到止盈止损条件时，就会自动平仓。启动前需要设置好止盈止损参数：
 
 ```python
@@ -152,11 +168,12 @@ pl_parameter = {
 因为目的是为了让大家快速熟悉AlgoPlus，所以很多问题都浅尝辄止，以后有机会我们再进行深入探讨，也欢迎大家在后台留言讨论。
 
 ## 7、订阅全市场行情并落地为csv文件
+
 期货合约都是有期限的，订阅全市场行情需要先使用`AlgoPlus.CTP.TraderApi.req_instrument`查询当前挂牌交易的所有合约，然后再交给`run_mdrecorder`订阅并存储。`subscribe_all.py`演示了具体如何使用。
 
 # 开源地址
 1. 码云：<https://gitee.com/AlgoPlus/>
-2. GitHub：<https://github.com/CTPPlus/AlgoPlus>
+2. GitHub：<https://github.com/KeyAlgo/AlgoPlus>
 
 # QQ群与微信公众号
  * QQ群：**866469866**

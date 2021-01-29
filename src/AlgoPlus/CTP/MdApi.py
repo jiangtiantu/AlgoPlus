@@ -32,6 +32,7 @@ class BarEngine(MdApiBase):
     def init_extra(self):
         # Bar字段
         bar_cache = {
+            "InstrumentID": b"",
             "UpdateTime": b"99:99:99",
             "LastPrice": 0.0,
             "HighPrice": 0.0,
@@ -59,6 +60,7 @@ class BarEngine(MdApiBase):
                 instrument_id = to_bytes(instrument_id.encode('utf-8'))
 
             # 初始化Bar字段
+            bar_cache["InstrumentID"] = instrument_id
             self.bar_dict[instrument_id] = bar_cache.copy()
 
     # ///深度行情通知

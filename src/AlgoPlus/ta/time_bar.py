@@ -5,6 +5,7 @@
 # 项目网址：http://www.algo.plus
 
 # bar_cache = {
+#     "InstrumentID": b"",
 #     "UpdateTime": b"99:99:99",
 #     "LastPrice": 0.0,
 #     "HighPrice": 0.0,

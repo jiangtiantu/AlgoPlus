@@ -144,14 +144,14 @@ cdef class TraderApiBase:
                                                                InvestorID=self.investor_id)
         return self.ReqQryInvestorPosition(qry_investor_position_field)
 
-    def req_qry_investor_position_detial(self):
+    def req_qry_investor_position_detail(self):
         """
         查询持仓明细。
         :return:
         """
-        qry_investor_position_detial_field = QryInvestorPositionDetailField(BrokerID=self.broker_id,
+        qry_investor_position_detail_field = QryInvestorPositionDetailField(BrokerID=self.broker_id,
                                                                             InvestorID=self.investor_id)
-        return self.ReqQryInvestorPositionDetail(qry_investor_position_detial_field)
+        return self.ReqQryInvestorPositionDetail(qry_investor_position_detail_field)
 
     def req_qry_trading_account(self):
         """
